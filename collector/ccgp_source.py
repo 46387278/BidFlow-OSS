@@ -46,7 +46,7 @@ def _fetch(url, timeout=30):
     if gap > 0:
         time.sleep(gap)
     _last[0] = time.time()
-    op = urllib.request.build_opener()
+    op = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     hdrs = {'User-Agent': UA, 'Referer': 'http://www.ccgp.gov.cn/',
             'Accept': 'text/html,application/xhtml+xml,*/*;q=0.8',
             'Accept-Language': 'zh-CN,zh;q=0.9'}
