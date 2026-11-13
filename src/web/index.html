@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>投标工作台</title>
+<style>
+:root{--ink:#1a1a1a;--dim:#6b6b6b;--line:#d8d8d3;--bg:#f6f6f3;--card:#fff;--red:#b3261e;--grn:#1f6b3a;--org:#8a6d1f;--blu:#1f5f8a}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.65 "Songti SC","SimSun","Microsoft YaHei",serif;color:var(--ink);background:var(--bg)}
+header{border-bottom:1px solid var(--line);background:var(--card);padding:14px 22px;display:flex;align-items:baseline;gap:14px}
+header h1{font-size:17px;margin:0;letter-spacing:.5px}
+header .v{font-size:12px;color:var(--dim)}
+header .st{margin-left:auto;font-size:12px;color:var(--dim)}
+header .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ccc;margin-right:5px}
+header .dot.on{background:var(--grn)}
+main{max-width:1040px;margin:0 auto;padding:20px 22px 60px}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);padding:16px 18px}
+.card h2{font-size:14px;margin:0 0 4px;display:flex;align-items:center;gap:7px}
+.card h2 .n{display:inline-flex;width:19px;height:19px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;align-items:center;justify-content:center;font-family:sans-serif}
+.card p.tip{font-size:12px;color:var(--dim);margin:0 0 12px;min-height:36px}
+label{display:block;font-size:12px;color:var(--dim);margin:8px 0 3px}
+input,select{width:100%;padding:7px 9px;border:1px solid var(--line);background:#fff;font:inherit;font-size:13px}
+input[type=file]{padding:5px}
+button{margin-top:12px;width:100%;padding:9px;border:1px solid var(--ink);background:var(--ink);color:#fff;font:inherit;font-size:13px;cursor:pointer;letter-spacing:.5px}
+button:hover{background:#000}
+button:disabled{background:#aaa;border-color:#aaa;cursor:wait}
+.row{display:flex;gap:8px}.row>div{flex:1}
+.out{margin-top:12px;font-size:12px}
+.out .ln{padding:5px 0;border-top:1px dashed var(--line);display:flex;justify-content:space-between;gap:8px}
+.out a{color:var(--blu);text-decoration:none;border-bottom:1px solid #cfe0ec}
+.out .k{color:var(--dim)}
+.files{margin-top:10px;border-top:1px solid var(--line);padding-top:10px}
+.files h3{font-size:12px;margin:0 0 6px;color:var(--dim);font-weight:400}
+.files a{display:block;padding:6px 8px;border:1px solid var(--line);margin-bottom:5px;color:var(--ink);text-decoration:none;font-size:12.5px;background:#fcfcfa}
+.files a:hover{border-color:var(--ink)}
+.files .sz{float:right;color:var(--dim);font-size:11px;font-family:sans-serif}
+.err{margin-top:10px;padding:8px 10px;background:#fdecea;border-left:3px solid var(--red);color:var(--red);font-size:12.5px}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
+th{background:#efefec;text-align:left;padding:5px 7px;border:1px solid var(--line);font-size:11.5px;font-weight:600}
+td{border:1px solid #ececea;padding:5px 7px}
+.tag{display:inline-block;padding:0 5px;font-size:11px;border-radius:2px}
+.t-done{background:#eaf7ef;color:var(--grn)}.t-run{background:#fdf6e3;color:var(--org)}.t-fail{background:#fdecea;color:var(--red)}
+footer{max-width:1040px;margin:0 auto;padding:0 22px 40px;color:var(--dim);font-size:11.5px;line-height:1.9}
+</style>
+</head>
+<body>
+<header>
+  <h1>投标工作台</h1>
+  <span class="v">v1.0 · 零依赖 · 数据不出门</span>
+  <span class="st"><span class="dot" id="dot"></span><span id="stx">检测中…</span></span>
+</header>
+
+<main>
+<div class="grid">
+
+  <div class="card">
+    <h2><span class="n">1</span>标书拆解</h2>
+    <p class="tip">上传招标文件，出四件套：废标红线档 / 方案写作骨架 / 要求台账 / 评分表数据。</p>
+    <label>招标文件（.docx）</label>
+    <input type="file" id="f1" accept=".docx">
+    <button id="b1" onclick="doSplit()">开始拆解</button>
+    <div class="out" id="o1"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">2</span>写标书初稿</h2>
+    <p class="tip">按评分细则逐点生成技术方案，带 S 编号与待填标记，输出 Word。</p>
+    <label>选择已拆解的任务</label>
+    <select id="jobsel"><option value="">— 先在上面拆一份 —</option></select>
+    <div class="row">
+      <div><label>项目名称</label><input id="pname" placeholder="可留空，取文件名"></div>
+      <div><label>投标人</label><input id="pbid" placeholder="公司名称"></div>
+    </div>
+    <button id="b2" onclick="doDraft()">生成初稿</button>
+    <div class="out" id="o2"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">3</span>需求雷达</h2>
+    <p class="tip">按地区、时间、金额筛选需求库，打分排序出项目表。</p>
+    <div class="row">
+      <div><label>地区</label><input id="rregion" placeholder="如 示例市，留空=全部"></div>
+      <div><label>近 N 天</label><input id="rdays" type="number" placeholder="0=不限"></div>
+    </div>
+    <label>金额下限（万元）</label>
+    <input id="ramt" type="number" placeholder="0=不限">
+    <button id="b3" onclick="doRadar()">生成项目表</button>
+    <div class="out" id="o3"></div>
+  </div>
+
+</div>
+
+<div class="card" style="margin-top:14px">
+  <h2>任务记录</h2>
+  <table id="jobs"><thead><tr><th>时间</th><th>类型</th><th>输入</th><th>状态</th><th>结果</th><th>产物</th></tr></thead><tbody></tbody></table>
+</div>
+</main>
+
+<footer>
+本服务只做三件可验收的事：拆出要求清单、按清单写方案、按条件筛项目。<br>
+废标判定与投标承诺不由本服务承担；文中标注「待填」的内容必须由投标人确认后方可提交。
+</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => (s||'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+function box(el, html){ el.innerHTML = html; }
+
+function files(list){
+  if(!list || !list.length) return '';
+  return '<div class="files"><h3>产物（点击查看/下载）</h3>' + list.map(f =>
+    `<a href="${f.url}" target="_blank">${esc(f.name)}<span class="sz">${(f.size/1024).toFixed(0)} KB</span></a>`).join('') + '</div>';
+}
+function kv(obj){
+  return Object.entries(obj||{}).map(([k,v]) => `<div class="ln"><span class="k">${esc(k)}</span><b>${esc(String(v))}</b></div>`).join('');
+}
+function fail(el, msg){ box(el, `<div class="err">${esc(msg)}</div>`); }
+
+async function health(){
+  try{
+    const r = await fetch('/api/health'); const d = await r.json();
+    $('dot').classList.add('on');
+    $('stx').textContent = `运行中 · PDF ${d.pdf ? '可用' : '仅 HTML'}`;
+  }catch(e){ $('stx').textContent = '服务未连接'; }
+}
+
+async function doSplit(){
+  const f = $('f1').files[0];
+  if(!f) return fail($('o1'), '请先选择招标文件');
+  const b = $('b1'); b.disabled = true; b.textContent = '拆解中…';
+  box($('o1'), '<div class="ln"><span class="k">处理中</span><b>规则引擎运行…</b></div>');
+  try{
+    const buf = await f.arrayBuffer();
+    const r = await fetch('/api/split?pdf=1', {
+      method:'POST',
+      headers:{'X-Filename': encodeURIComponent(f.name), 'Content-Type':'application/octet-stream'},
+      body: buf
+    });
+    const d = await r.json();
+    if(!d.ok) throw new Error(d.error || '拆解失败');
+    box($('o1'), kv(d.summary) + files(d.files));
+    loadJobs(); refreshJobSel();
+  }catch(e){ fail($('o1'), e.message); }
+  finally{ b.disabled = false; b.textContent = '开始拆解'; }
+}
+
+async function doDraft(){
+  const job = $('jobsel').value;
+  if(!job) return fail($('o2'), '请先选择一个已拆解的任务');
+  const b = $('b2'); b.disabled = true; b.textContent = '生成中…';
+  box($('o2'), '<div class="ln"><span class="k">处理中</span><b>按 S 编号逐点生成…</b></div>');
+  try{
+    const r = await fetch('/api/draft', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({job, name: $('pname').value.trim(), bidder: $('pbid').value.trim()})});
+    const d = await r.json();
+    if(!d.ok) throw new Error(d.error || '生成失败');
+    box($('o2'), kv(d.summary) + files(d.files));
+  }catch(e){ fail($('o2'), e.message); }
+  finally{ b.disabled = false; b.textContent = '生成初稿'; }
+}
+
+async function doRadar(){
+  const b = $('b3'); b.disabled = true; b.textContent = '生成中…';
+  box($('o3'), '<div class="ln"><span class="k">处理中</span><b>扫描需求库…</b></div>');
+  try{
+    const q = new URLSearchParams({region:$('rregion').value.trim(), days:$('rdays').value||0, minamt:$('ramt').value||0});
+    const r = await fetch('/api/radar?' + q, {method:'POST'});
+    const d = await r.json();
+    if(!d.ok) throw new Error(d.error || '生成失败');
+    box($('o3'), kv(d.summary) + files(d.files));
+    loadJobs();
+  }catch(e){ fail($('o3'), e.message); }
+  finally{ b.disabled = false; b.textContent = '生成项目表'; }
+}
+
+async function loadJobs(){
+  try{
+    const r = await fetch('/api/jobs'); const d = await r.json();
+    const tb = $('jobs').querySelector('tbody');
+    if(!d.jobs.length){ tb.innerHTML = '<tr><td colspan=6 style="color:#999">暂无记录</td></tr>'; return; }
+    tb.innerHTML = d.jobs.map(j => {
+      const cls = j.status==='done' ? 't-done' : j.status==='running' ? 't-run' : 't-fail';
+      const res = Object.entries(j.summary||{}).slice(0,3).map(([k,v])=>`${k} ${v}`).join(' · ');
+      return `<tr><td>${esc((j.created||'').replace('T',' '))}</td><td>${j.kind==='split'?'拆标':j.kind==='radar'?'雷达':'初稿'}</td>
+        <td>${esc(j.name)}</td><td><span class="tag ${cls}">${j.status==='done'?'完成':j.status==='running'?'进行中':'失败'}</span></td>
+        <td style="font-size:11.5px;color:#6b6b6b">${esc(res)}</td>
+        <td><a href="/store/${j.id}/" target="_blank" style="font-size:11.5px">目录</a></td></tr>`;
+    }).join('');
+  }catch(e){}
+}
+
+async function refreshJobSel(){
+  try{
+    const r = await fetch('/api/jobs'); const d = await r.json();
+    const ok = d.jobs.filter(j => j.kind === 'split' && j.status === 'done');
+    $('jobsel').innerHTML = ok.length
+      ? ok.map(j => `<option value="${j.id}">${esc(j.name)}　${j.created.replace('T',' ')}</option>`).join('')
+      : '<option value="">— 先在上面拆一份 —</option>';
+  }catch(e){}
+}
+
+health(); loadJobs(); refreshJobSel();
+</script>
+</body>
+</html>

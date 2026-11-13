@@ -1,0 +1,26 @@
+# 换行符与编码策略
+#
+# 这一节不是洁癖，是踩过坑写下来的：
+# 中文 Windows 的 cmd 按 GBK 解析 .bat，如果文件被 git 转成 LF 或存成 UTF-8，
+# 批处理里的中文会直接把行结构撑坏，报 "xx 不是内部或外部命令"。
+# 所以 .bat 一律按二进制处理，git 不要碰它的换行和编码。
+
+*.bat -text
+
+# 文本文件统一 LF 入库，检出时按平台转换
+*.py   text eol=lf
+*.md   text eol=lf
+*.json text eol=lf
+*.txt  text eol=lf
+*.yml  text eol=lf
+
+# 许可证与声明文件没有扩展名，上面的通配规则覆盖不到，必须显式写
+LICENSE text eol=lf
+NOTICE  text eol=lf
+
+# 二进制
+*.docx binary
+*.xlsx binary
+*.pdf  binary
+*.png  binary
+*.jpg  binary

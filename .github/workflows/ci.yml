@@ -1,0 +1,70 @@
+name: tests
+
+# 为什么用 windows-latest：这个项目一半的坑在 .bat 编码、中文路径、Windows 商店假 python 上。
+# 用 ubuntu 跑绿了不代表客户能装 —— 客户全是 Windows。
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.8', '3.11', '3.13']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 设置 Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: 环境自述（排障时先看这段）
+        shell: pwsh
+        run: |
+          python -V
+          python -c "import sys; print(sys.executable)"
+          $PSVersionTable.PSVersion
+
+      # 许可证守卫：LICENSE 是全文不是摘要、NOTICE 在、每个 .py 有 SPDX 头。
+      # 这条不是形式主义 —— fork 之后新建模块最容易忘加头，忘一次归属就断了。
+      - name: 许可证守卫
+        run: python tools/check_license.py
+
+      - name: 生成合成招标样本
+        run: python tools/make_sample_bid.py
+
+      - name: 拆标引擎
+        run: python tests/test_split.py
+
+      - name: 初稿引擎
+        run: python tests/test_draft.py
+
+      - name: 需求雷达
+        run: python tests/test_radar.py
+
+      - name: 真实标书结构回归
+        run: python tests/test_realworld.py
+
+      # 打包后跑装机测试：从 zip 解压到空目录，模拟客户第一次安装。
+      # 这一步专抓「本机有、干净机上没有」的问题（比如 output/ 目录不存在）。
+      - name: 打包
+        run: python tools/build_zip.py ../BidFlow-OSS.zip
+
+      - name: 干净环境装机测试
+        run: python tests/test_install_cleanroom.py ../BidFlow-OSS.zip
+
+      - name: 上传失败产物
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-logs-${{ matrix.python-version }}
+          path: |
+            output/
+            *.log
+          retention-days: 7

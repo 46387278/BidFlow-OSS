@@ -1,0 +1,13 @@
+{
+  "host": "127.0.0.1",
+  "port": 8080,
+  "data_dir": "data",
+  "store_dir": "output",
+  "pdf_default": true,
+  "_说明": [
+    "host 默认 127.0.0.1，开源单机版只支持本机监听。",
+    "data_dir / store_dir 可写相对路径（相对包根目录）或绝对路径。",
+    "pdf_default 为 true 时，请求里不写 pdf 参数也按出 PDF 处理；实际是否出 PDF 取决于本机有没有 Chrome/Edge。",
+    "要启用本文件：复制为同目录下 config.json（包优先读 config.json，其次读本文件）。"
+  ]
+}

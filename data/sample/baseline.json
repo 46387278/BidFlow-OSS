@@ -1,0 +1,22 @@
+{
+  "a": {
+    "paras": 94,
+    "items": 11,
+    "wsum": 100.0,
+    "redline": 24,
+    "rows": 47,
+    "points": 21,
+    "ai": 7,
+    "fp16": "783afdb536638acb"
+  },
+  "b": {
+    "paras": 70,
+    "items": 6,
+    "wsum": 70.0,
+    "redline": 17,
+    "rows": 28,
+    "points": 10,
+    "ai": 2,
+    "fp16": "12e4e5d0d77e371e"
+  }
+}

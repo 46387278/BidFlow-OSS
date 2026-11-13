@@ -1,0 +1,13 @@
+# BidFlow v1.0 —— 第三方依赖清单
+#
+# 这个文件是空的，这是设计决定，不是遗漏。
+#
+# 本系统只使用 Python 标准库：
+#   http.server / sqlite3 / zipfile / xml.etree / csv / json / hashlib / urllib
+# 不需要 pip install 任何东西，也不需要联网安装。
+#
+# 运行要求：
+#   Python 3.8 及以上（开发与验收环境：3.13.14 / Windows 11）
+#   可选：本机有 Chrome 或 Edge 时自动附 PDF 输出；没有则只出 HTML，功能不受影响。
+#
+# 如果将来确实要加第三方依赖，请先在 CHANGELOG 里写明理由和被替代的标准库方案。
