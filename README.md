@@ -12,13 +12,13 @@
 在解压目录打开命令提示符，按需运行：
 
 ```bat
-python collector\ccgp_collect.py 公厕
-python collector\radar_brief.py
+python collector\daily.py 公厕
 ```
 
-第一条从中国政府采购网检索公开公告，并按公告链接去重入库。第二条生成公厕相关 HTML 清单，存入 `data/reports/`。
+这条命令从中国政府采购网检索公开公告，按原始链接去重入库，并在 `data/reports/` 生成公厕可投 HTML 清单。
+需要每日自动运行时，在 Windows 任务计划程序中添加每日任务。程序填 Python 解释器完整路径，参数填 `collector\daily.py 公厕`，起始目录填 BidFlow 解压目录。
 也可通过网页按地区和金额筛选，导出 HTML 和 CSV。请以原公告核对资格、金额和投标截止日期。
 
-离线试用可先运行 `python collector/ingest.py data/sample/notices.example.jsonl` 导入合成样例。
+离线试用可先运行 `python collector/daily.py --input data/sample/notices.example.jsonl` 导入合成样例。
 
 开源许可证为 Apache 2.0。提交投标文件前请人工核对全部内容。
