@@ -69,6 +69,37 @@ def extract_points(rule):
         if re.search(r'得\s*\d+\s*分', text):
             continue
         pts.append({'sym': num + '.', 'group': '', 'text': text, 'point_score': None})
+    if pts:
+        return pts
+
+    # 模式 C：括号内并列列举（真实招标文件最普遍的写法）
+    #   「根据投标人的项目实施方案（应包含设备运输方案、安装调试方案、验收方案）进行评审」
+    # 这类句子没有编号，但它把评委要看什么写在括号里了 —— 那就是计分点。
+    # 不加这条规则，真实文件里 100% 的评分项都会退化成「须整段人工编写」。
+    # 一份文件里常有多处「应包含…」（供货方案一处、安装方案一处），要全部收下并去重，
+    # 只取第一处会漏掉一半内容。
+    parts, seen = [], set()
+    for m in re.finditer(r'[（(][^（()）]{0,120}?[)）]', head):
+        seg = m.group(0)
+        if not re.search(r'包含|包括|应含|至少含', seg):
+            continue
+        body = re.split(r'包含|包括|应含|至少含', seg, 1)[-1]
+        body = body.strip('（()）：: ')
+        for p in re.split(r'[、；;，,]', body):
+            p = p.strip('；;。，, 、')
+            # 「包括但不限于包含：产品质量承诺」这种套娃前缀要一层层剥掉，剥到没有为止
+            for _ in range(3):
+                q = re.sub(r'^(?:但不限于|不限于|还应包括|还应包含|包含|包括|等)[：:、]?', '', p).strip()
+                if q == p:
+                    break
+                p = q
+            p = re.sub(r'等$', '', p).strip()
+            if 2 <= len(p) <= 40 and p not in seen:
+                seen.add(p)
+                parts.append(p)
+    if len(parts) >= 2:
+        for i, p in enumerate(parts, 1):
+            pts.append({'sym': '%d)' % i, 'group': '', 'text': p, 'point_score': None})
     return pts
 
 

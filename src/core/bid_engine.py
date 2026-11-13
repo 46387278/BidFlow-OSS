@@ -122,9 +122,30 @@ def _is_score_header(row):
     return (any(k in joined for k in HEAD_SCORE) and any(k in joined for k in HEAD_WEIGHT))
 
 
+def _is_score_header2(row):
+    """两列表头也要认：「评审因素 | 评审标准」。
+
+    2026-11-13 用真实招标文件（广东政采 2026102309 装配式公厕）验收时发现：
+    表头只有两列，数据行因为合并单元格是三列——类别 / 评分项（6.0分） / 评分标准。
+    旧规则要求表头 ≥3 列且必须出现「分值/权重」字样，于是整张评分表被判成正文，
+    评分项提取为 0。规则该跟着真实文件走，不能让文件迁就规则。
+    """
+    if len(row) != 2:
+        return False
+    if max(len(c) for c in row) > 24:
+        return False
+    joined = ' '.join(row)
+    return any(k in joined for k in HEAD_SCORE) and any(k in joined for k in HEAD_METHOD)
+
+
 def _num(s):
     m = re.search(r'\d+(?:\.\d+)?', s.replace('％', '%'))
     return float(m.group(0)) if m else None
+
+
+# 分值写在名称里：「技术参数响应程度1 (6.0分)」。真实文件里极常见，
+# 没有独立的分值列，只能从名称文本里取。
+SCORE_IN_NAME = re.compile(r'[（(]\s*(\d+(?:\.\d+)?)\s*分\s*[)）]')
 
 
 def find_scoring(doc):
@@ -141,19 +162,27 @@ def find_scoring(doc):
         ri = 0
         while ri < len(rows):
             header = rows[ri]
+            two_col = False
             if not _is_score_header(header):
-                ri += 1
-                continue
+                if not _is_score_header2(header):
+                    ri += 1
+                    continue
+                two_col = True
             is_detail = any(any(k in h for k in HEAD_METHOD) for h in header) or len(header) >= 5
             ci = {}
-            for idx, h in enumerate(header):
-                if any(k in h for k in HEAD_SCORE) and 'name' not in ci:
-                    ci['name'] = idx
-                elif any(k in h for k in HEAD_WEIGHT) and 'w' not in ci:
-                    ci['w'] = idx
-                elif any(k in h for k in HEAD_METHOD) and 'm' not in ci:
-                    ci['m'] = idx
-            if 'name' not in ci or 'w' not in ci:
+            if two_col:
+                # 两列表头：第 0 列是类别（技术部分/商务部分），
+                # 名称在第 1 列、标准在第 2 列，分值从名称里取。
+                ci = {'name': 1, 'm': 2}
+            else:
+                for idx, h in enumerate(header):
+                    if any(k in h for k in HEAD_SCORE) and 'name' not in ci:
+                        ci['name'] = idx
+                    elif any(k in h for k in HEAD_WEIGHT) and 'w' not in ci:
+                        ci['w'] = idx
+                    elif any(k in h for k in HEAD_METHOD) and 'm' not in ci:
+                        ci['m'] = idx
+            if 'name' not in ci or ('w' not in ci and not two_col):
                 ri += 1
                 continue
             if not is_detail:
@@ -163,13 +192,20 @@ def find_scoring(doc):
                 continue
             # 逐行提取，直到遇到下一个表头
             j = ri + 1
-            while j < len(rows) and not _is_score_header(rows[j]):
+            while j < len(rows) and not _is_score_header(rows[j]) and not _is_score_header2(rows[j]):
                 r = rows[j]
                 if len(r) < len(header) - 1:      # 段落行/合并行，跳过
                     j += 1
                     continue
                 name = r[ci['name']] if ci['name'] < len(r) else ''
-                w = _num(r[ci['w']]) if ci['w'] < len(r) else None
+                if 'w' in ci:
+                    w = _num(r[ci['w']]) if ci['w'] < len(r) else None
+                    rule = r[ci['w'] + 1] if ci['w'] + 1 < len(r) else ''
+                else:
+                    # 分值没有独立列：从名称里取「(6.0分)」，评分标准取方法列
+                    m_in_name = SCORE_IN_NAME.search(name or '')
+                    w = float(m_in_name.group(1)) if m_in_name else None
+                    rule = r[ci['m']] if 'm' in ci and ci['m'] < len(r) else ''
                 if w is None or not name:
                     j += 1
                     continue
@@ -179,7 +215,7 @@ def find_scoring(doc):
                     'name': name,
                     'method': r[ci['m']] if 'm' in ci and ci['m'] < len(r) else '',
                     'weight': w,
-                    'rule': r[ci['w'] + 1] if ci['w'] + 1 < len(r) else '',
+                    'rule': rule,
                     'locator': f'表{ti}·行{j}',
                 })
                 j += 1
