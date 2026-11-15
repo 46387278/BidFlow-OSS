@@ -4,14 +4,14 @@ cd /d "%~dp0"
 set FAILED=0
 
 echo ============================================================
-echo  BidFlow è‡ªæ£€ - ä¸è”ç½‘ã€ä¸å¯åŠ¨æœåŠ¡
+echo  BidFlow ×Ô¼ì - ²»ÁªÍø¡¢²»Æô¶¯·şÎñ
 echo ============================================================
-rem ä¸èƒ½ç”¨ where pythonï¼šWindowsApps å ä½åˆ«åä¼šè¢«è¯¯åˆ¤ä¸ºå·²å®‰è£…
+rem ²»ÄÜÓÃ where python£ºWindowsApps Õ¼Î»±ğÃû»á±»ÎóÅĞÎªÒÑ°²×°
 set PYOK=0
 set PYEXE=python
-python -V >nul 2>nul
+call python -V >nul 2>nul
 if not errorlevel 1 goto :py_found
-py -3 -V >nul 2>nul
+call py -3 -V >nul 2>nul
 if not errorlevel 1 goto :py_launcher
 goto :no_python
 
@@ -25,36 +25,36 @@ if not exist "output" md "output"
 if not exist "config\config.json" if exist "config\config.example.json" copy "config\config.example.json" "config\config.json" >nul
 
 echo.
-echo [1/3] æ‹†æ ‡å¼•æ“
+echo [1/3] ²ğ±êÒıÇæ
 %PYEXE% tests\test_split.py
 if errorlevel 1 set FAILED=1
 
 echo.
-echo [2/3] å†™ç¨¿å¼•æ“
+echo [2/3] Ğ´¸åÒıÇæ
 %PYEXE% tests\test_draft.py
 if errorlevel 1 set FAILED=1
 
 echo.
-echo [3/3] éœ€æ±‚é›·è¾¾
+echo [3/3] ĞèÇóÀ×´ï
 %PYEXE% tests\test_radar.py
 if errorlevel 1 set FAILED=1
 
 echo.
 echo ============================================================
 if "%FAILED%"=="1" goto :failed
-echo  ç»“æœï¼šå…¨éƒ¨é€šè¿‡ ALL PASS
+echo  ½á¹û£ºÈ«²¿Í¨¹ı ALL PASS
 echo ============================================================
 if not defined BIDFLOW_NONINTERACTIVE pause
 exit /b 0
 
 :failed
-echo  ç»“æœï¼šæœ‰å¤±è´¥é¡¹ï¼Œè§ä¸Šæ–¹æç¤º
+echo  ½á¹û£ºÓĞÊ§°ÜÏî£¬¼ûÉÏ·½ÌáÊ¾
 echo ============================================================
 if not defined BIDFLOW_NONINTERACTIVE pause
 exit /b 1
 
 :no_python
-echo [é”™è¯¯] æ²¡æœ‰å¯ç”¨çš„ Pythonï¼Œè¯·å…ˆçœ‹ docs\å®‰è£…éƒ¨ç½²æ‰‹å†Œ.md ç¬¬ä¸‰èŠ‚
-echo è‹¥æç¤º WindowsApps\python.exeï¼Œé‚£æ˜¯ Windows å ä½ç¨‹åºï¼Œä¸æ˜¯çœŸ Python
+echo [´íÎó] Ã»ÓĞ¿ÉÓÃµÄ Python£¬ÇëÏÈ¿´ docs\°²×°²¿ÊğÊÖ²á.md µÚÈı½Ú
+echo ÈôÌáÊ¾ WindowsApps\python.exe£¬ÄÇÊÇ Windows Õ¼Î»³ÌĞò£¬²»ÊÇÕæ Python
 if not defined BIDFLOW_NONINTERACTIVE pause
 exit /b 1
