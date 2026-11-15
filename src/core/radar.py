@@ -122,6 +122,11 @@ def render_html(m, title='需求雷达项目表'):
         f'金额 ≥ {f["minamt"]} 万' if f['minamt'] else '',
     ] if x) or '全库'
 
+    def source_link(url):
+        if not url:
+            return '—'
+        return f'<a href="{html.escape(url)}" target=_blank>原件</a>'
+
     def table(rows, empty):
         if not rows:
             return f'<div class="empty">{empty}</div>'
@@ -129,7 +134,7 @@ def render_html(m, title='需求雷达项目表'):
             f"<tr><td class='sc'>{r['score']}</td><td class='nm'>{html.escape(r['name'])}</td>"
             f"<td class='rg'>{html.escape(r['region'])}</td><td class='am'>{html.escape(r['amount'])}</td>"
             f"<td class='st'>{html.escape(r['stage'])}</td><td class='wh'>{html.escape(r['why'])}</td>"
-            f"<td class='lk'>{('<a href=\"' + html.escape(r['link']) + '\" target=_blank>原件</a>') if r['link'] else '—'}</td></tr>"
+            f"<td class='lk'>{source_link(r['link'])}</td></tr>"
             for r in rows)
         return (f"<table><thead><tr><th>评分</th><th>项目</th><th>地区</th><th>金额(万)</th>"
                 f"<th>阶段</th><th>评分依据</th><th>来源</th></tr></thead><tbody>{body}</tbody></table>")
