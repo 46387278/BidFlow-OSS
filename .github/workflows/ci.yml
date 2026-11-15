@@ -56,11 +56,11 @@ jobs:
       # 打包后跑装机测试：从 zip 解压到空目录，模拟客户第一次安装。
       # 这一步专抓「本机有、干净机上没有」的问题（比如 output/ 目录不存在）。
       - name: 打包
-        run: python tools/build_zip.py ../BidFlow-OSS.zip
+        run: python tools/build_zip.py ../BidFlow_v1.1.1.zip
 
       - name: 干净环境装机测试
         timeout-minutes: 20
-        run: python -u tests/test_install_cleanroom.py ../BidFlow-OSS.zip
+        run: python -u tests/test_install_cleanroom.py ../BidFlow_v1.1.1.zip
 
       - name: 上传失败产物
         if: failure()
