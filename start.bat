@@ -7,9 +7,9 @@ rem where 会返回"找到"，但一执行就报"系统找不到文件"。必须真的跑一次才算数。
 rem 同时试 py -3：有些机器只装了 py 启动器，python 不在 PATH 上。
 set PYOK=0
 set PYEXE=python
-python -V >nul 2>nul
+call python -V >nul 2>nul
 if not errorlevel 1 goto :py_found
-py -3 -V >nul 2>nul
+call py -3 -V >nul 2>nul
 if not errorlevel 1 goto :py_launcher
 goto :no_python
 
@@ -37,7 +37,7 @@ start "" /min "%COMSPEC%" /c "timeout /t 2 >nul & start http://127.0.0.1:%PORT%/
 
 echo.
 echo 服务已停止。按任意键关闭窗口。
-pause >nul
+if not defined BIDFLOW_NONINTERACTIVE pause >nul
 exit /b 0
 
 :no_python
@@ -55,5 +55,5 @@ echo  如果提示里出现 WindowsApps\python.exe，
 echo  那是 Windows 自带的占位程序，不是真 Python，必须按上面装一次。
 echo  详细步骤见 docs\安装部署手册.md 第三节
 echo ============================================================
-pause
+if not defined BIDFLOW_NONINTERACTIVE pause
 exit /b 1

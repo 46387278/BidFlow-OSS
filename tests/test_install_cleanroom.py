@@ -64,12 +64,39 @@ def decode_out(raw):
 
 
 def run(cmd, cwd, env=None, timeout=180):
-    e = os.environ.copy()
-    if env is not None:
-        e = env
-    p = subprocess.run(cmd, cwd=cwd, env=e, stdin=subprocess.DEVNULL,
-                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout)
-    return p.returncode, decode_out(p.stdout)
+    child_env = (os.environ if env is None else env).copy()
+    child_env['BIDFLOW_NONINTERACTIVE'] = '1'
+    print('    RUN %s (timeout %ds)' % (' '.join(cmd), timeout), flush=True)
+    with tempfile.TemporaryFile() as output:
+        try:
+            result = subprocess.run(cmd, cwd=cwd, env=child_env,
+                                    stdin=subprocess.DEVNULL, stdout=output,
+                                    stderr=subprocess.STDOUT, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            output.seek(0)
+            print('    TIMEOUT after %ds: %s' %
+                  (timeout, decode_out(output.read())[-4000:]), flush=True)
+            raise
+        output.seek(0)
+        print('    EXIT %d' % result.returncode, flush=True)
+        return result.returncode, decode_out(output.read())
+
+
+def run_without_python(work, alias=False):
+    # PATH alone cannot hide the Windows Python launcher installed by CI.
+    with tempfile.TemporaryDirectory(prefix='bidflow_no_python_') as fixture:
+        shutil.copyfile(os.path.join(work, 'start.bat'),
+                        os.path.join(fixture, 'start.bat'))
+        for command in ('python', 'py'):
+            with open(os.path.join(fixture, command + '.cmd'), 'w', encoding='ascii') as stub:
+                stub.write('@echo off\n')
+                if alias and command == 'python':
+                    stub.write('echo WindowsApps Python alias unavailable 1>&2\n')
+                stub.write('exit /b 1\n')
+        env = os.environ.copy()
+        env['PATH'] = os.pathsep.join((fixture, os.path.join(env['SYSTEMROOT'], 'System32')))
+        env['PATHEXT'] = '.CMD;.EXE;.BAT;.COM'
+        return run(['cmd', '/d', '/c', 'start.bat'], fixture, env=env, timeout=60)
 
 
 def port_free(port):
@@ -159,10 +186,7 @@ def main():
             print('[SKIP] 后续安装测试需要 Windows cmd.exe')
             return 2
         print('\n[K2] 无 Python 时双击 start.bat')
-        bare = {'PATH': r'C:\Windows\System32;C:\Windows', 'SystemRoot': r'C:\Windows',
-                'TEMP': os.environ.get('TEMP', r'C:\Windows\Temp'),
-                'USERPROFILE': os.environ.get('USERPROFILE', '')}
-        rc, out = run(['cmd', '/c', 'start.bat'], work, env=bare, timeout=60)
+        rc, out = run_without_python(work)
         rec('退出码 = 1', rc == 1, '实测 %d' % rc)
         rec('提示里出现中文"错误"', '错误' in out, '')
         rec('提示里出现 python.org', 'python.org' in out, '')
@@ -383,20 +407,14 @@ def main():
 
         # ---------- K13 Windows 自带的假 python 别名 ----------
         print('\n[K13] Windows 自带假 python 别名（where 找得到、一执行就报错）')
-        wa = os.path.join(os.environ.get('LOCALAPPDATA', ''), 'Microsoft', 'WindowsApps')
-        if not os.path.isdir(wa):
-            rec('假别名不被误判为已装', True, '本机无 WindowsApps 目录，跳过（等价无 Python，K2 已覆盖）')
-        else:
-            env13 = {'PATH': r'C:\Windows\System32;C:\Windows;' + wa,
-                     'SystemRoot': r'C:\Windows',
-                     'TEMP': os.environ.get('TEMP', ''),
-                     'USERPROFILE': os.environ.get('USERPROFILE', ''),
-                     'LOCALAPPDATA': os.environ.get('LOCALAPPDATA', '')}
-            rc13, o13 = run(['cmd', '/c', 'start.bat'], work, env=env13, timeout=90)
-            rec('假别名不被误判为已装', rc13 == 1 and '没有可用的 Python' in o13,
-                'rc=%d 首行=%s' % (rc13, o13.strip().splitlines()[0][:70] if o13.strip() else ''))
-            rec('假别名场景给补救提示', 'WindowsApps' in o13, '')
+        rc13, o13 = run_without_python(work, alias=True)
+        rec('假别名不被误判为已装', rc13 == 1 and '没有可用的 Python' in o13,
+            'rc=%d 首行=%s' % (rc13, o13.strip().splitlines()[0][:70] if o13.strip() else ''))
+        rec('假别名场景给补救提示', 'WindowsApps' in o13, '')
 
+    except Exception:
+        rec('装机测试异常退出', False, '')
+        raise
     finally:
         if proc and proc.poll() is None:
             proc.terminate()

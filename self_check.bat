@@ -9,9 +9,9 @@ echo ============================================================
 rem 不能用 where python：WindowsApps 占位别名会被误判为已安装
 set PYOK=0
 set PYEXE=python
-python -V >nul 2>nul
+call python -V >nul 2>nul
 if not errorlevel 1 goto :py_found
-py -3 -V >nul 2>nul
+call py -3 -V >nul 2>nul
 if not errorlevel 1 goto :py_launcher
 goto :no_python
 
@@ -44,17 +44,17 @@ echo ============================================================
 if "%FAILED%"=="1" goto :failed
 echo  结果：全部通过 ALL PASS
 echo ============================================================
-pause
+if not defined BIDFLOW_NONINTERACTIVE pause
 exit /b 0
 
 :failed
 echo  结果：有失败项，见上方提示
 echo ============================================================
-pause
+if not defined BIDFLOW_NONINTERACTIVE pause
 exit /b 1
 
 :no_python
 echo [错误] 没有可用的 Python，请先看 docs\安装部署手册.md 第三节
 echo 若提示 WindowsApps\python.exe，那是 Windows 占位程序，不是真 Python
-pause
+if not defined BIDFLOW_NONINTERACTIVE pause
 exit /b 1
