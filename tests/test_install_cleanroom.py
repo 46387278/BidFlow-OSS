@@ -94,7 +94,7 @@ def run_without_python(work, alias=False):
                     stub.write('echo WindowsApps Python alias unavailable 1>&2\n')
                 stub.write('exit /b 1\n')
         env = os.environ.copy()
-        env['PATH'] = os.pathsep.join((fixture, os.path.join(env['SystemRoot'], 'System32')))
+        env['PATH'] = os.pathsep.join((fixture, os.path.join(env['SYSTEMROOT'], 'System32')))
         env['PATHEXT'] = '.CMD;.EXE;.BAT;.COM'
         return run(['cmd', '/d', '/c', 'start.bat'], fixture, env=env, timeout=60)
 
@@ -412,6 +412,9 @@ def main():
             'rc=%d 首行=%s' % (rc13, o13.strip().splitlines()[0][:70] if o13.strip() else ''))
         rec('假别名场景给补救提示', 'WindowsApps' in o13, '')
 
+    except Exception:
+        rec('装机测试异常退出', False, '')
+        raise
     finally:
         if proc and proc.poll() is None:
             proc.terminate()
