@@ -4,9 +4,7 @@
 
 ## Windows 启动
 
-从 [GitHub Releases](https://github.com/46387278/BidFlow-OSS/releases) 的 Assets 下载 `BidFlow_v1.1.1.zip`，解压并进入 `BidFlow_v1.1.1`。安装 Python 3.8 或更高版本，双击 `self_check.bat`，再双击 `start.bat`。
-
-如果下载的是 GitHub 自动生成的 Source code (zip)，先在解压目录运行 `python tools/make_sample_bid.py` 生成自检所需的两份合成标书，再执行 `self_check.bat`。
+解压到新目录，安装 Python 3.8 或更高版本，双击 `self_check.bat`，再双击 `start.bat`。
 默认访问 http://127.0.0.1:8080/。可上传 DOCX 标书，核对评分项、废标风险和原文位置，并生成 Word 初稿。
 
 ## 需求雷达

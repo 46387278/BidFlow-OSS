@@ -25,7 +25,7 @@ import hashlib
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-TOP = 'BidFlow_v1.1.1'
+TOP = os.path.basename(ROOT)
 
 SKIP_DIRS = {'__pycache__', '.git', '.github', '.idea', '.vscode', 'issues', 'advisor_out'}
 SKIP_FILES = {'config/config.json', 'output/jobs.db', 'requirements.txt.bak'}
@@ -46,8 +46,7 @@ def main():
     out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(ROOT), TOP + '.zip')
 
     sample = os.path.join(ROOT, 'data', 'sample', 'sample_bid.docx')
-    sample_b = os.path.join(ROOT, 'data', 'sample', 'sample_bid_b.docx')
-    if not all(os.path.isfile(path) for path in (sample, sample_b)):
+    if not os.path.isfile(sample):
         print('[错误] 缺少样本。先执行：python tools/make_sample_bid.py')
         return 1
 
