@@ -49,7 +49,7 @@ LOG = []
 
 def rec(name, passed, detail=''):
     (OK if passed else FAIL).append(name)
-    print('  [%s] %-34s %s' % ('PASS' if passed else 'FAIL', name, detail))
+    print('  [%s] %-34s %s' % ('PASS' if passed else 'FAIL', name, detail), flush=True)
     LOG.append((name, passed, detail))
 
 
@@ -195,7 +195,13 @@ def main():
                 break
         rec('端口 %d 起来' % PORT, up, '')
         if not up:
-            tail = (proc.stdout.read() or b'').decode('utf-8', 'replace')[-600:]
+            if proc.poll() is None:
+                proc.kill()
+            try:
+                raw = proc.communicate(timeout=8)[0]
+            except subprocess.TimeoutExpired:
+                raw = b''
+            tail = (raw or b'').decode('utf-8', 'replace')[-600:]
             print('    服务输出尾部:\n%s' % tail)
             return 1
         try:
