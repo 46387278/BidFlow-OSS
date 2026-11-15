@@ -4,9 +4,9 @@ cd /d "%~dp0"
 set FAILED=0
 
 echo ============================================================
-echo  BidFlow ×Ô¼ì - ²»ÁªÍø¡¢²»Æô¶¯·şÎñ
+echo  BidFlow è‡ªæ£€ - ä¸è”ç½‘ã€ä¸å¯åŠ¨æœåŠ¡
 echo ============================================================
-rem ²»ÄÜÓÃ where python£ºWindowsApps Õ¼Î»±ğÃû»á±»ÎóÅĞÎªÒÑ°²×°
+rem ä¸èƒ½ç”¨ where pythonï¼šWindowsApps å ä½åˆ«åä¼šè¢«è¯¯åˆ¤ä¸ºå·²å®‰è£…
 set PYOK=0
 set PYEXE=python
 python -V >nul 2>nul
@@ -25,36 +25,36 @@ if not exist "output" md "output"
 if not exist "config\config.json" if exist "config\config.example.json" copy "config\config.example.json" "config\config.json" >nul
 
 echo.
-echo [1/3] ²ğ±êÒıÇæ
+echo [1/3] æ‹†æ ‡å¼•æ“
 %PYEXE% tests\test_split.py
 if errorlevel 1 set FAILED=1
 
 echo.
-echo [2/3] Ğ´¸åÒıÇæ
+echo [2/3] å†™ç¨¿å¼•æ“
 %PYEXE% tests\test_draft.py
 if errorlevel 1 set FAILED=1
 
 echo.
-echo [3/3] ĞèÇóÀ×´ï
+echo [3/3] éœ€æ±‚é›·è¾¾
 %PYEXE% tests\test_radar.py
 if errorlevel 1 set FAILED=1
 
 echo.
 echo ============================================================
 if "%FAILED%"=="1" goto :failed
-echo  ½á¹û£ºÈ«²¿Í¨¹ı ALL PASS
+echo  ç»“æœï¼šå…¨éƒ¨é€šè¿‡ ALL PASS
 echo ============================================================
-pause
+if not defined BIDFLOW_NONINTERACTIVE pause
 exit /b 0
 
 :failed
-echo  ½á¹û£ºÓĞÊ§°ÜÏî£¬¼ûÉÏ·½ÌáÊ¾
+echo  ç»“æœï¼šæœ‰å¤±è´¥é¡¹ï¼Œè§ä¸Šæ–¹æç¤º
 echo ============================================================
-pause
+if not defined BIDFLOW_NONINTERACTIVE pause
 exit /b 1
 
 :no_python
-echo [´íÎó] Ã»ÓĞ¿ÉÓÃµÄ Python£¬ÇëÏÈ¿´ docs\°²×°²¿ÊğÊÖ²á.md µÚÈı½Ú
-echo ÈôÌáÊ¾ WindowsApps\python.exe£¬ÄÇÊÇ Windows Õ¼Î»³ÌĞò£¬²»ÊÇÕæ Python
-pause
+echo [é”™è¯¯] æ²¡æœ‰å¯ç”¨çš„ Pythonï¼Œè¯·å…ˆçœ‹ docs\å®‰è£…éƒ¨ç½²æ‰‹å†Œ.md ç¬¬ä¸‰èŠ‚
+echo è‹¥æç¤º WindowsApps\python.exeï¼Œé‚£æ˜¯ Windows å ä½ç¨‹åºï¼Œä¸æ˜¯çœŸ Python
+if not defined BIDFLOW_NONINTERACTIVE pause
 exit /b 1

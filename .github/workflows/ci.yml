@@ -59,7 +59,8 @@ jobs:
         run: python tools/build_zip.py ../BidFlow-OSS.zip
 
       - name: 干净环境装机测试
-        run: python tests/test_install_cleanroom.py ../BidFlow-OSS.zip
+        timeout-minutes: 20
+        run: python -u tests/test_install_cleanroom.py ../BidFlow-OSS.zip
 
       - name: 上传失败产物
         if: failure()

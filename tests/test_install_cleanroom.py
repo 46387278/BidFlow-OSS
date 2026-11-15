@@ -64,12 +64,22 @@ def decode_out(raw):
 
 
 def run(cmd, cwd, env=None, timeout=180):
-    e = os.environ.copy()
-    if env is not None:
-        e = env
-    p = subprocess.run(cmd, cwd=cwd, env=e, stdin=subprocess.DEVNULL,
-                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout)
-    return p.returncode, decode_out(p.stdout)
+    child_env = (os.environ if env is None else env).copy()
+    child_env['BIDFLOW_NONINTERACTIVE'] = '1'
+    print('    RUN %s (timeout %ds)' % (' '.join(cmd), timeout), flush=True)
+    with tempfile.TemporaryFile() as output:
+        try:
+            result = subprocess.run(cmd, cwd=cwd, env=child_env,
+                                    stdin=subprocess.DEVNULL, stdout=output,
+                                    stderr=subprocess.STDOUT, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            output.seek(0)
+            print('    TIMEOUT after %ds: %s' %
+                  (timeout, decode_out(output.read())[-4000:]), flush=True)
+            raise
+        output.seek(0)
+        print('    EXIT %d' % result.returncode, flush=True)
+        return result.returncode, decode_out(output.read())
 
 
 def port_free(port):
