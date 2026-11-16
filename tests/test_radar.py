@@ -27,9 +27,9 @@ import collections
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PKG = os.path.dirname(HERE)
-sys.path.insert(0, os.path.join(PKG, 'src', 'core'))
+sys.path.insert(0, os.path.join(PKG, 'src'))
 
-import radar as RD
+from core import radar as RD
 
 CSV_PATH = os.path.join(PKG, 'data', 'requirements.example.csv')
 AS_OF = '2026-09-10'          # 固定基准日：样例库的最后一条是 09-08，落在「7 天内」档
@@ -59,6 +59,15 @@ def main():
     check('不跟（<10）', len(m['dead']), 1)
     print('       分档明细：可行动 %s' % [r['name'][:14] for r in m['act']])
 
+    check('四个节点均可识别', sorted({row['node'] for row in m['rows']}), [1, 2, 3, 4])
+    settings = RD.keywords()
+    close = {'阶段': '招标公告', '投标截止': '2026-09-24'}
+    boundary = {'阶段': '招标公告', '投标截止': '2026-09-25'}
+    check('14 天截止降为 10', RD.score(close, AS_OF, settings)[0], 10)
+    check('15 天截止保持默认', RD.score(boundary, AS_OF, settings)[0], 20)
+    check('异常状态不扣阶段分',
+          RD.score({'阶段': '已失效', '状态': '放弃'}, AS_OF, settings)[0], 0)
+
     print('\n[2/5] 字段完整')
     rows = RD.load(CSV_PATH)
     for col in ('项目名称', '地区', '阶段', '链接', '发现日期'):
@@ -80,14 +89,14 @@ def main():
     out = os.path.join(PKG, 'output', '_test_radar.csv')
     RD.write_csv(m, out)
     got = list(csv.reader(io.open(out, encoding='utf-8-sig')))
-    check('CSV 表头列数', len(got[0]), 11)
+    check('CSV 表头列数', len(got[0]), 13)
     check('CSV 数据行数', len(got) - 1, len(m['rows']))
     check('CSV 行宽一致', len(set(len(r) for r in got)), 1)
-    no_reason = [r for r in got[1:] if not r[8].strip()]
+    no_reason = [r for r in got[1:] if not r[10].strip()]
     check('缺评分依据行', len(no_reason), 0)
     html = RD.render_html(m)
     check('HTML 含三档标题',
-          all(k in html for k in ('一、可行动', '二、观察', '三、不跟')), True)
+          all(k in html for k in ('一、可行动', '二、观察', '三、低分项目')), True)
     check('output 目录自动创建', os.path.isfile(out), True)
     os.remove(out)
 

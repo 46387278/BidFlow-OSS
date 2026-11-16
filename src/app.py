@@ -19,7 +19,7 @@ import os, sys, io, csv, json, sqlite3, time, uuid, datetime, shutil, subprocess
 import urllib.parse, traceback
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 
-APP_VER = '1.1.1'
+APP_VER = '1.2.0'
 ROOT = os.path.dirname(os.path.abspath(__file__))      # src/
 PKG = os.path.dirname(ROOT)                            # 包根目录
 CORE = os.path.join(ROOT, 'core')
@@ -82,7 +82,7 @@ import redline_engine as RE
 import plan_engine as PE
 import pipeline as PL
 import writer as WR
-import radar as RD
+from core import radar as RD
 
 DB = os.path.join(STORE, 'jobs.db')
 MAX_BODY = 80 * 1024 * 1024

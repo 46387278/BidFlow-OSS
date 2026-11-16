@@ -1,4 +1,4 @@
-# BidFlow · 投标工作台 1.1.1
+# BidFlow · 投标工作台 1.2.0
 
 面向 ToG/ToB 业务的工程与采购团队，AI 招投标工作台：**项目雷达扫描、标书拆解、标书初稿生成**。
 
@@ -12,7 +12,7 @@
 
 ## 下载与启动（三步）
 
-1. 到 [Releases](../../releases/latest) 下载 **`BidFlow_v1.1.1.zip`**
+1. 到 [Releases](../../releases/latest) 下载 **`BidFlow_v1.2.0.zip`**
 
    > ⚠️ 不要下「Source code (zip)/(tar.gz)」。那是源码快照，不含示例标书 `data/sample/sample_bid.docx`，双击 `self_check.bat` 会直接判失败。正式包只有 Release 附件里那一个。
 
@@ -36,10 +36,12 @@
 在解压目录打开命令提示符：
 
 ```bat
-python collector\daily.py 公厕
+python collector\daily.py 办公家具
 ```
 
-在 `data/reports/` 生成可投清单 HTML。要每天自动跑，用 Windows 任务计划程序建每日任务：程序填 Python 解释器完整路径，参数填 `collector\daily.py 公厕`，起始目录填解压目录。
+词表与信源在 `config/` 下配置，默认示例为办公家具。见[接入你自己的信源](docs/接入你自己的信源.md)。
+
+在 `data/reports/` 生成需求雷达 HTML 和 CSV。要每天自动跑，用 Windows 任务计划程序建每日任务：程序填 Python 解释器完整路径，参数填 `collector\daily.py 办公家具`，起始目录填解压目录。
 
 离线试用：
 
