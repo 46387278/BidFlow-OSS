@@ -12,6 +12,10 @@
 """
 import os
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
+from leak_scan import Scanner
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'src'))
 from core.bid_engine import find_scoring          # noqa: E402
@@ -80,5 +84,37 @@ pts = extract_points('（包括但不限于包含：产品质量承诺、质量�
 check('套娃前缀已剥离', pts[0]['text'] if pts else '', '产品质量承诺')
 
 print('\n' + '-' * 62)
+
+print('\n[泄密扫描] 匿名豁免逐次匹配')
+roots = ['街道', '街道办', '城管局', '城市管理和综合执法局',
+         '环卫科', '环卫总站', '环卫处', '华润置地']
+cases = [
+    ('某街道', set()),
+    ('某街道办事处', set()),
+    ('某区城管局', set()),
+    ('某某区城管局', set()),
+    ('××区环卫科', set()),
+    ('XX市环卫总站', set()),
+    ('xx市环卫总站', set()),
+    ('南山区城市管理和综合执法局', {'CUSTOMER'}),
+    ('深圳市城管局环卫处', {'CUSTOMER'}),
+    ('福田区城管局', {'CUSTOMER'}),
+    ('龙岗区城管局', {'CUSTOMER'}),
+    ('华润置地', {'CUSTOMER'}),
+    ('某南山区城市管理和综合执法局', {'CUSTOMER'}),
+    ('某区南山区环卫科', {'CUSTOMER'}),
+    ('某区城管局、福田区城管局', {'CUSTOMER'}),
+    ('某区城管局、华润置地', {'CUSTOMER'}),
+    (r'C:\Users\Administrator\workspace', {'PATH'}),
+    (r'\\office-host\shared', {'PATH'}),
+    ('某区城管局 ghp_xxxx', {'SECRET'}),
+]
+cases += [('某' + separator + '城管局', {'CUSTOMER'})
+          for separator in '0《》（） ，。、；']
+for value, expected in cases:
+    scanner = Scanner(roots)
+    scanner.check_text('synthetic', 'line:1', value)
+    check(value, sorted(rule for rule, _, _ in scanner.hits), sorted(expected))
+
 print('通过 %d 项，失败 %d 项' % (PASS, FAIL))
 sys.exit(1 if FAIL else 0)
