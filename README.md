@@ -4,6 +4,12 @@
 
 **离线 · 开源**：只用 Python 标准库，不装第三方包、不联网、不上传文件，全部数据留在本机。许可证 Apache-2.0。
 
+---
+
+> **关于本项目的开发方式**：BidFlow 源自我自己的工程业务。代码由我的三个 AI 员工（AutoClaw、WorkBuddy、Codex）协助开发，我负责确定需求、审核公开范围和批准发布。每个版本的验证记录见 Releases 与 GitHub Actions。
+>
+> —— 老唐，BidFlow 项目维护者
+
 ## 下载与启动（三步）
 
 1. 到 [Releases](../../releases/latest) 下载 **`BidFlow_v1.1.1.zip`**
