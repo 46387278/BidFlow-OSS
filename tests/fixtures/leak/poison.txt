@@ -1,0 +1,6 @@
+Synthetic token: ghp_xxxx
+Synthetic internal path: C:\Users\FictionalUser\workspace
+Synthetic customer: 星砂虚构设备有限公司
+C:\Users\<你>\workspace
+C:\Users\<你的用户名>\workspace
+C:\Users\FictionalUser\workspace
