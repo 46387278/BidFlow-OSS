@@ -74,6 +74,8 @@ jobs:
             if ($LASTEXITCODE -eq 0) { throw 'Mutation survived: py fallback' }
           } finally { Move-Item -Force start.original start.bat }
 
+          exit 0
+
       - name: Mutation test · 写死端口
         shell: pwsh
         run: |
