@@ -119,10 +119,12 @@ def scan(csv_path, region='', days=0, minamt=0, limit=200, as_of=None):
     out.sort(key=lambda x: (-x['score'], x['name']))
     out = out[:limit]
 
-    act = [x for x in out if x['score'] >= 40]
-    watch = [x for x in out if 10 <= x['score'] < 40]
-    dead = [x for x in out if x['score'] < 10]
+    action_min, watch_min = settings['action_min'], settings['watch_min']
+    act = [x for x in out if x['score'] >= action_min]
+    watch = [x for x in out if watch_min <= x['score'] < action_min]
+    dead = [x for x in out if x['score'] < watch_min]
     return {'rows': out, 'n': len(rows), 'act': act, 'watch': watch, 'dead': dead,
+            'action_min': action_min, 'watch_min': watch_min,
             'filters': {'region': region, 'days': days, 'minamt': minamt},
             'as_of': now.isoformat()}
 
@@ -175,9 +177,9 @@ td {{ border:1px solid #e6e6e3; padding:3px 5px; vertical-align:top; }}
 <div class="cards">
   <div class="c"><div class="k">库内总量</div><div class="v">{m['n']}</div><div class="u">条</div></div>
   <div class="c"><div class="k">本期命中</div><div class="v">{len(m['rows'])}</div><div class="u">条</div></div>
-  <div class="c"><div class="k">可行动（≥40）</div><div class="v" style="color:#b3261e">{len(m['act'])}</div><div class="u">条</div></div>
-  <div class="c"><div class="k">观察（10–39）</div><div class="v" style="color:#8a6d1f">{len(m['watch'])}</div><div class="u">条</div></div>
-  <div class="c"><div class="k">不跟（&lt;10）</div><div class="v" style="color:#888">{len(m['dead'])}</div><div class="u">条</div></div>
+  <div class="c"><div class="k">可行动（≥{m["action_min"]}）</div><div class="v" style="color:#b3261e">{len(m['act'])}</div><div class="u">条</div></div>
+  <div class="c"><div class="k">观察（{m["watch_min"]}–{m["action_min"] - 1}）</div><div class="v" style="color:#8a6d1f">{len(m['watch'])}</div><div class="u">条</div></div>
+  <div class="c"><div class="k">不跟（&lt;{m["watch_min"]}）</div><div class="v" style="color:#888">{len(m['dead'])}</div><div class="u">条</div></div>
 </div>
 <h2>一、可行动</h2>{table(m['act'], '本期无可行动项目。')}
 <h2>二、观察</h2>{table(m['watch'], '无。')}

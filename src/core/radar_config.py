@@ -8,6 +8,7 @@ CONFIG = Path(__file__).resolve().parents[2] / 'config'
 NODES = ('预算立项', '采购意向', '招标公告', '招标结果公布')
 STAGE_W_DEFAULT = dict(zip(NODES, (30, 25, 20, 5)))
 DEFAULT_KEYWORDS = {'good': ['办公家具', '家具', '办公桌', '办公椅', '会议桌', '文件柜'], 'bad': ['维修', '保养', '租赁'], 'build': ['采购', '购置', '新建', '供货', '含安装', '配送'], 'service': ['维修', '保养', '租赁', '劳务', '物业'], 'good_weight': 15, 'stage_weights': {'预算立项': 30, '采购意向': 25, '招标公告': 20, '招标结果公布': 5}}
+DEFAULT_KEYWORDS.update(action_min=45, watch_min=15)
 DEFAULT_SOURCES = {'sources': [{'name': 'ccgp', 'enabled': True, 'keywords': []}]}
 
 
@@ -35,6 +36,9 @@ def valid_keywords(raw):
     stages = raw.get('stage_weights', {})
     return (all(words(raw.get(key, [])) for key in ('good', 'bad', 'build', 'service'))
             and type(raw.get('good_weight', 15)) is int
+            and all(type(raw.get(key, DEFAULT_KEYWORDS[key])) is int
+                    for key in ('action_min', 'watch_min'))
+            and raw.get('action_min', 45) > raw.get('watch_min', 15)
             and isinstance(stages, dict)
             and all(key in NODES and type(value) is int for key, value in stages.items()))
 

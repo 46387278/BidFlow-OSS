@@ -1,7 +1,7 @@
 {
   "_说明": [
     "复制为 keywords.json 生效。good/bad 是标题加分和降权词，build/service 是源适配器过滤词。示例为办公家具。",
-    "good_weight 与 stage_weights 可覆盖默认评分。"
+    "good_weight 与 stage_weights 可覆盖默认评分。action_min/watch_min 为示例分组线，可自定义。"
   ],
   "good": [
     "办公家具",
@@ -32,6 +32,8 @@
     "物业"
   ],
   "good_weight": 15,
+  "action_min": 45,
+  "watch_min": 15,
   "stage_weights": {
     "预算立项": 30,
     "采购意向": 25,

@@ -54,9 +54,9 @@ def main():
     print('\n[1/5] 总量与分档')
     check('库内总量', m['n'], 6)
     check('命中条数', len(m['rows']), 6)
-    check('可行动（≥40）', len(m['act']), 4)
-    check('观察（10–39）', len(m['watch']), 1)
-    check('不跟（<10）', len(m['dead']), 1)
+    check('可行动', len(m['act']), 4)
+    check('观察', len(m['watch']), 1)
+    check('低分', len(m['dead']), 1)
     print('       分档明细：可行动 %s' % [r['name'][:14] for r in m['act']])
 
     check('四个节点均可识别', sorted({row['node'] for row in m['rows']}), [1, 2, 3, 4])
