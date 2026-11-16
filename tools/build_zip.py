@@ -28,11 +28,16 @@ ROOT = os.path.dirname(HERE)
 TOP = os.path.basename(ROOT)
 
 SKIP_DIRS = {'__pycache__', '.git', '.github', '.idea', '.vscode', 'issues', 'advisor_out'}
-SKIP_FILES = {'config/config.json', 'output/jobs.db', 'requirements.txt.bak'}
+SKIP_FILES = {'config/config.json', 'config/keywords.json', 'config/sources.json',
+              'tests/fixtures/leak/poison.txt', 'output/jobs.db', 'requirements.txt.bak'}
 
 
 def should_skip(rel, name):
     if name.endswith(('.pyc', '.pyo', '.part', '.log')):
+        return True
+    if (rel.startswith(('data/reports/', 'collector/output/'))
+            or rel == 'data/requirements.csv' or rel.startswith('data/requirements.csv.')
+            or rel == 'data-internal/customer_names.txt'):
         return True
     if rel in SKIP_FILES:
         return True

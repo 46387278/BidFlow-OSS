@@ -1,0 +1,12 @@
+{
+  "_说明": [
+    "复制为 sources.json 生效。name 对应适配器，enabled 控制是否启用，keywords 为空时采用品类词表。内置 ccgp 为全国公开检索。"
+  ],
+  "sources": [
+    {
+      "name": "ccgp",
+      "enabled": true,
+      "keywords": []
+    }
+  ]
+}

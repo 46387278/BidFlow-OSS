@@ -12,12 +12,15 @@ UA = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
       '(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36')
 
 BASE = 'http://search.ccgp.gov.cn/bxsearch'
-MIN_GAP = 90          # 秒；两次请求最小间隔，低于此值实测必被封
+MIN_GAP = 90          # 秒；两次请求最小间隔，降低触发站点限流的风险
 MAX_REQ = 6           # 单次跑批最多请求数（含分页），超额直接停手
 
-# 标题里出现即算对口（用于二次过滤，防止「公厕保洁服务」这类非工程标的混进来）
-BUILD_KW = ('新建', '改建', '改造', '建设', '采购', '购置', '提升', '增设', '装配式', '驿站')
-SERVICE_KW = ('保洁', '清运', '管养', '运维', '劳务', '物业', '粪便处理', '服务')
+from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
+from core.radar_config import keywords
+
 
 _last = [0.0]
 
@@ -126,18 +129,12 @@ def parse(html, kw=''):
     return uniq
 
 
-def classify(title):
-    """返回 (stage, relevant)。
-
-    对口判定顺序很关键（2026-11-09 修）：
-    先看有没有工程/设备动作词（建设、改造、购置、装配式…），有就是对口；
-    没有才看服务词（保洁、清运、管养…），命中即判服务类。
-    早先版本把「采购」放进对口词，结果「公厕保洁服务的采购公告」被误判成对口标的——
-    这类标的是每年几十万的劳务合同，跟装配式设备生意无关。
-    """
+def classify(title, settings=None):
+    """识别阶段并用可配置词表过滤服务外包。"""
+    settings = keywords() if settings is None else settings
     t = title or ''
     if any(k in t for k in ('中标', '成交', '结果')):
-        stage = '结果公告'
+        stage = '招标结果公布'
     elif any(k in t for k in ('废标', '流标', '终止', '失败')):
         stage = '流标/废标公告'
     elif any(k in t for k in ('意向', '需求公示', '采购计划')):
@@ -146,17 +143,10 @@ def classify(title):
         stage = '变更/澄清公告'
     else:
         stage = '招标公告'
-    hard = ('新建', '改建', '改造', '建设', '购置', '提升', '增设', '装配式',
-            '驿站', '采购项目', '设备采购', '材料采购')
-    if any(k in t for k in hard):
-        relevant = True
-    elif any(k in t for k in SERVICE_KW):
-        relevant = False
-    elif '采购' in t:
-        relevant = True
-    else:
-        relevant = True
-    return stage, relevant
+    build = any(word in t for word in settings['build'])
+    service = any(word in t for word in settings['service'])
+    return stage, not service and (build or not settings['build'])
+
 
 
 def parse_dl(text):
@@ -180,7 +170,7 @@ def parse_dl(text):
     return ''
 
 
-def fetch(keywords=('公厕',), days=7, pages=1, on_item=None, log=print):
+def fetch(keywords=(), days=7, pages=1, on_item=None, log=print):
     """按关键词串行检索。返回统计与条目。
 
     任何一次请求被判定限流，立即停手（不再重试，越试封越久）。
@@ -218,7 +208,7 @@ def fetch(keywords=('公厕',), days=7, pages=1, on_item=None, log=print):
 
 if __name__ == '__main__':
     import sys
-    kws = sys.argv[1:] or ['公厕']
+    kws = sys.argv[1:] or keywords()['good'][:3]
     its, errs, n = fetch(keywords=kws, days=7, pages=1)
     print('请求 %d 次，条目 %d，错误 %s' % (n, len(its), errs))
     for x in its[:20]:

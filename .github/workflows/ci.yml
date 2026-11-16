@@ -72,6 +72,24 @@ jobs:
         timeout-minutes: 20
         run: python -u tests/test_install_cleanroom.py ../BidFlow-OSS.zip
 
+      - name: 泄密扫描器回归
+        run: python tests/test_leak_scan.py
+
+      - name: 解压候选包并离线生成雷达报表
+        shell: pwsh
+        run: |
+          $trial = Join-Path $env:RUNNER_TEMP "offline-radar"
+          Expand-Archive ../BidFlow-OSS.zip $trial
+          $root = (Get-ChildItem $trial -Directory | Select-Object -First 1).FullName
+          Push-Location $root
+          try {
+            python collector/daily.py --input data/sample/notices.example.jsonl
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            if (!(Get-ChildItem data/reports/*.html) -or !(Get-ChildItem data/reports/*.csv)) {
+              throw 'HTML/CSV missing'
+            }
+          } finally { Pop-Location }
+
       - name: 上传失败产物
         if: failure()
         uses: actions/upload-artifact@v4

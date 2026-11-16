@@ -7,7 +7,7 @@
     "rows": 47,
     "points": 21,
     "ai": 7,
-    "fp16": "783afdb536638acb"
+    "fp16": "ce67e8637999fad7"
   },
   "b": {
     "paras": 70,
@@ -17,6 +17,6 @@
     "rows": 28,
     "points": 10,
     "ai": 2,
-    "fp16": "12e4e5d0d77e371e"
+    "fp16": "2a2e6c65d9be2f20"
   }
 }
