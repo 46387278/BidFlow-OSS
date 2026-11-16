@@ -63,31 +63,6 @@ jobs:
           python tests/test_config_port_fingerprint.py
           exit $LASTEXITCODE
 
-      - name: Mutation test · 移除 py 回退
-        shell: pwsh
-        run: |
-          Copy-Item start.bat start.original
-          try {
-            python -c "from pathlib import Path; p=Path('start.bat'); s=p.read_bytes(); a=b'if not errorlevel 1 goto :py_launcher'; assert s.count(a)==1; p.write_bytes(s.replace(a,b'goto :no_python'))"
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-            python tests/test_win_start_fingerprint.py
-            if ($LASTEXITCODE -eq 0) { throw 'Mutation survived: py fallback' }
-          } finally { Move-Item -Force start.original start.bat }
-
-          exit 0
-
-      - name: Mutation test · 写死端口
-        shell: pwsh
-        run: |
-          Copy-Item start.bat start.original
-          try {
-            python -c "from pathlib import Path; p=Path('start.bat'); s=p.read_bytes(); a=b'%PYEXE% src'+bytes([92])+b'app.py'; assert s.count(a)==1; p.write_bytes(s.replace(a,a+b' --port 8080'))"
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-            python tests/test_config_port_fingerprint.py
-            if ($LASTEXITCODE -eq 0) { throw 'Mutation survived: forced port' }
-          } finally { Move-Item -Force start.original start.bat }
-          throw 'Mutation evidence complete: both regressions rejected'
-
       # 打包后跑装机测试：从 zip 解压到空目录，模拟客户第一次安装。
       # 这一步专抓「本机有、干净机上没有」的问题（比如 output/ 目录不存在）。
       - name: 打包
