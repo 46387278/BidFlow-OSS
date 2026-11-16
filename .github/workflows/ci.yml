@@ -53,6 +53,16 @@ jobs:
       - name: 真实标书结构回归
         run: python tests/test_realworld.py
 
+      - name: 三条用户行为回归
+        shell: pwsh
+        run: |
+          python tests/test_bid_score_fingerprint.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tests/test_win_start_fingerprint.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tests/test_config_port_fingerprint.py
+          exit $LASTEXITCODE
+
       # 打包后跑装机测试：从 zip 解压到空目录，模拟客户第一次安装。
       # 这一步专抓「本机有、干净机上没有」的问题（比如 output/ 目录不存在）。
       - name: 打包
