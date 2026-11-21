@@ -52,6 +52,22 @@ def read_limited(stream):
     return data
 
 
+def has_identifiable_match(value, name):
+    # A marker must end within two letters of this specific occurrence.
+    offset = value.find(name)
+    while offset != -1:
+        anonymous = any(
+            value.endswith(marker, 0, offset - gap)
+            and (gap == 0 or value[offset - gap:offset].isalpha())
+            for gap in range(min(2, offset) + 1)
+            for marker in ('某', '某某', '××', 'xx')
+        )
+        if not anonymous:
+            return True
+        offset = value.find(name, offset + 1)
+    return False
+
+
 class Scanner:
     def __init__(self, names):
         self.names = names
@@ -65,7 +81,7 @@ class Scanner:
                         ' "\'').casefold() in PROXY_PLACEHOLDERS:
                     continue
                 self.hits.add((rule, file_id, location))
-        if any(name in value.casefold() for name in self.names):
+        if any(has_identifiable_match(value.casefold(), name) for name in self.names):
             self.hits.add(('CUSTOMER', file_id, location))
 
     def scan_docx(self, file_id, data):
