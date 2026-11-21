@@ -36,8 +36,8 @@ def amount_of(text):
     return ''
 
 
-def to_notice(x):
-    stage, relevant = CS.classify(x['title'])
+def to_notice(x, settings=None):
+    stage, relevant = CS.classify(x['title'], settings)
     if not relevant:
         return None
     amt = amount_of(x['desc']) or amount_of(x['title'])
@@ -64,15 +64,19 @@ def to_notice(x):
 
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith('--')]
-    kws = args or ['公厕']
+    if not args:
+        print('用法：python collector/ccgp_collect.py <关键词>')
+        return 2
+    kws = args
     ingest = '--no-ingest' not in sys.argv
     print('=== ccgp 全国检索：%s（近 7 天）===' % '、'.join(kws))
     items, errs, nreq = CS.fetch(keywords=kws, days=7, pages=1)
     print('请求 %d 次，原始 %d 条' % (nreq, len(items)))
 
     notices, dropped = [], 0
+    settings = CS.keywords()
     for x in items:
-        nb = to_notice(x)
+        nb = to_notice(x, settings)
         if nb is None:
             dropped += 1
             continue

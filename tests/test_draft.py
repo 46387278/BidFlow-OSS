@@ -70,7 +70,7 @@ def main():
     json.dump(sc, open(scp, 'w', encoding='utf-8'), ensure_ascii=False)
 
     r = WR.make_draft(scp, tmp, '4-初稿', BLOCKS,
-                      {'项目名称': '示例市 A 片区公共卫生间采购项目',
+                      {'项目名称': '示例市 A 片区办公家具采购项目',
                        '投标人': '示范投标人'})
     docx = r['docx']
     print('\n产物：%s（%d B）' % (os.path.basename(docx), os.path.getsize(docx)))

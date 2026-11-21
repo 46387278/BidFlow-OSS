@@ -1,5 +1,6 @@
 @echo off
 chcp 936 >nul
+echo BidFlow v1.2.0
 cd /d "%~dp0"
 set FAILED=0
 

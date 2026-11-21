@@ -10,6 +10,10 @@
 """
 import os, csv, io, re, datetime, html
 
+from .radar_config import keywords
+
+NODES = ('预算立项', '采购意向', '招标公告', '招标结果公布')
+
 
 def _as_date(v):
     """接受 date / 'YYYY-MM-DD' / None，统一成 date。None → 今天。"""
@@ -18,11 +22,6 @@ def _as_date(v):
     if isinstance(v, datetime.date):
         return v
     return _date(str(v)) or datetime.date.today()
-
-STAGE_W = {'招标中': 25, '需求': 15, '意向': 12, '已开标': 5, '待确认': 0,
-           '已中标': -5, '已成交': -15, '流标': -10, '已失效': -30, '放弃': -40}
-KEY_GOOD = ('装配式', '公厕', '厕所', '移动', '智慧厕')
-
 
 def _num(s):
     m = re.search(r'(\d+(?:\.\d+)?)', str(s or ''))
@@ -44,15 +43,21 @@ def load(csv_path):
         return list(csv.DictReader(f))
 
 
-def score(row, as_of=None):
+def score(row, as_of=None, settings=None):
     """打分。as_of 可注入基准日 —— 新鲜度权重依赖「今天」，不注入则测试
     跨天必失败，CI 上表现为随机红。"""
     now = _as_date(as_of)
     pts, why = 0, []
     st = (row.get('阶段') or '').strip()
-    pts += STAGE_W.get(st, 0)
-    if STAGE_W.get(st, 0):
-        why.append(f'阶段{st}{STAGE_W[st]:+d}')
+    settings = keywords() if settings is None else settings
+    weight = settings['stage_weights'].get(st, 0)
+    deadline = _date(row.get('投标截止'))
+    # 临近截止的公告介入窗口较短。
+    if st == '招标公告' and deadline and (deadline - now).days < 15:
+        weight = 10
+    pts += weight
+    if weight:
+        why.append(f'阶段{st}{weight:+d}')
 
     amt = _num(row.get('金额(万元)'))
     if amt is not None and amt > 0:
@@ -69,10 +74,14 @@ def score(row, as_of=None):
         if w:
             why.append(f'{age}天前{w:+d}')
 
-    name = (row.get('项目名称') or '') + (row.get('品类') or '')
-    if any(k in name for k in KEY_GOOD):
-        pts += 25
-        why.append('品类对口+25')
+    name = row.get('项目名称') or ''
+    weight = settings['good_weight']
+    if any(word in name for word in settings['bad']):
+        pts -= weight
+        why.append(f'过滤词{-weight:+d}')
+    elif any(word in name for word in settings['good']):
+        pts += weight
+        why.append(f'品类对口{weight:+d}')
 
     return pts, '·'.join(why)
 
@@ -81,6 +90,7 @@ def scan(csv_path, region='', days=0, minamt=0, limit=200, as_of=None):
     rows = load(csv_path)
     now = _as_date(as_of)
     out = []
+    settings = keywords()
     for r in rows:
         if region and region not in (r.get('地区') or ''):
             continue
@@ -90,10 +100,13 @@ def scan(csv_path, region='', days=0, minamt=0, limit=200, as_of=None):
         amt = _num(r.get('金额(万元)'))
         if minamt and (amt is None or amt < minamt):
             continue
-        s, why = score(r, now)
+        s, why = score(r, now, settings)
+        stage = (r.get('阶段') or '').strip()
+        node = NODES.index(stage) + 1 if stage in NODES else 0
         out.append({
             'score': s, 'why': why,
-            'stage': (r.get('阶段') or '').strip(),
+            'stage': stage if node else '判不出',
+            'node': node, 'status': r.get('状态') or '',
             'region': r.get('地区') or '',
             'name': r.get('项目名称') or '',
             'buyer': r.get('采购方') or '',
@@ -106,10 +119,12 @@ def scan(csv_path, region='', days=0, minamt=0, limit=200, as_of=None):
     out.sort(key=lambda x: (-x['score'], x['name']))
     out = out[:limit]
 
-    act = [x for x in out if x['score'] >= 40]
-    watch = [x for x in out if 10 <= x['score'] < 40]
-    dead = [x for x in out if x['score'] < 10]
+    action_min, watch_min = settings['action_min'], settings['watch_min']
+    act = [x for x in out if x['score'] >= action_min]
+    watch = [x for x in out if watch_min <= x['score'] < action_min]
+    dead = [x for x in out if x['score'] < watch_min]
     return {'rows': out, 'n': len(rows), 'act': act, 'watch': watch, 'dead': dead,
+            'action_min': action_min, 'watch_min': watch_min,
             'filters': {'region': region, 'days': days, 'minamt': minamt},
             'as_of': now.isoformat()}
 
@@ -133,11 +148,11 @@ def render_html(m, title='需求雷达项目表'):
         body = ''.join(
             f"<tr><td class='sc'>{r['score']}</td><td class='nm'>{html.escape(r['name'])}</td>"
             f"<td class='rg'>{html.escape(r['region'])}</td><td class='am'>{html.escape(r['amount'])}</td>"
-            f"<td class='st'>{html.escape(r['stage'])}</td><td class='wh'>{html.escape(r['why'])}</td>"
+            f"<td class='st'>{html.escape(r['stage'])}</td><td>{r['node']}</td><td>{html.escape(r['status'])}</td><td class='wh'>{html.escape(r['why'])}</td>"
             f"<td class='lk'>{source_link(r['link'])}</td></tr>"
             for r in rows)
         return (f"<table><thead><tr><th>评分</th><th>项目</th><th>地区</th><th>金额(万)</th>"
-                f"<th>阶段</th><th>评分依据</th><th>来源</th></tr></thead><tbody>{body}</tbody></table>")
+                f"<th>阶段</th><th>node</th><th>状态</th><th>评分依据</th><th>来源</th></tr></thead><tbody>{body}</tbody></table>")
 
     return f"""<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
 <title>{html.escape(title)}</title><style>
@@ -162,15 +177,15 @@ td {{ border:1px solid #e6e6e3; padding:3px 5px; vertical-align:top; }}
 <div class="cards">
   <div class="c"><div class="k">库内总量</div><div class="v">{m['n']}</div><div class="u">条</div></div>
   <div class="c"><div class="k">本期命中</div><div class="v">{len(m['rows'])}</div><div class="u">条</div></div>
-  <div class="c"><div class="k">可行动（≥40）</div><div class="v" style="color:#b3261e">{len(m['act'])}</div><div class="u">条</div></div>
-  <div class="c"><div class="k">观察（10–39）</div><div class="v" style="color:#8a6d1f">{len(m['watch'])}</div><div class="u">条</div></div>
-  <div class="c"><div class="k">不跟（&lt;10）</div><div class="v" style="color:#888">{len(m['dead'])}</div><div class="u">条</div></div>
+  <div class="c"><div class="k">可行动（≥{m["action_min"]}）</div><div class="v" style="color:#b3261e">{len(m['act'])}</div><div class="u">条</div></div>
+  <div class="c"><div class="k">观察（{m["watch_min"]}–{m["action_min"] - 1}）</div><div class="v" style="color:#8a6d1f">{len(m['watch'])}</div><div class="u">条</div></div>
+  <div class="c"><div class="k">不跟（&lt;{m["watch_min"]}）</div><div class="v" style="color:#888">{len(m['dead'])}</div><div class="u">条</div></div>
 </div>
 <h2>一、可行动</h2>{table(m['act'], '本期无可行动项目。')}
 <h2>二、观察</h2>{table(m['watch'], '无。')}
-<h2>三、不跟（阶段失效或已成交）</h2>{table(m['dead'][:30], '无。')}
+<h2>三、低分项目</h2>{table(m['dead'][:30], '无。')}
 <div class="foot">
-评分口径：阶段权重（招标中+25／需求+15／已失效−30／放弃−40）＋金额档（≥200万+25／≥100万+15）＋新鲜度（7天内+20）＋品类对口+25。<br>
+评分口径：介入窗口＋金额＋公告新鲜度＋品类词表。<br>
 本表只做筛选与排序，不对项目真实性、可投性作判断；金额「待确认」者按未知计分。来源链接可逐条回原件核对。
 </div></body></html>"""
 
@@ -182,9 +197,9 @@ def write_csv(m, path):
         os.makedirs(d, exist_ok=True)
     with open(path, 'w', encoding='utf-8-sig', newline='') as f:
         w = csv.writer(f)
-        w.writerow(['评分', '项目名称', '地区', '金额(万元)', '阶段', '品类', '采购方',
+        w.writerow(['评分', '项目名称', '地区', '金额(万元)', '阶段', 'node', '状态', '品类', '采购方',
                     '发现日期', '评分依据', '链接', '备注'])
         for r in m['rows']:
-            w.writerow([r['score'], r['name'], r['region'], r['amount'], r['stage'],
+            w.writerow([r['score'], r['name'], r['region'], r['amount'], r['stage'], r['node'], r['status'],
                         r['kind'], r['buyer'], r['date'], r['why'], r['link'], r['note']])
     return path
